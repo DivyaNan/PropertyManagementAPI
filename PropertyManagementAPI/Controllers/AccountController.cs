@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using PropertyManagementAPI.Data;
 using PropertyManagementAPI.DTOs;
 using PropertyManagementAPI.Interfaces;
 using PropertyManagementAPI.Model;
@@ -17,7 +18,7 @@ namespace PropertyManagementAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
-        public AccountController(IUnitOfWork unitOfWork,IConfiguration configuration)
+        public AccountController(IUnitOfWork unitOfWork, IConfiguration configuration)
         {
             this._unitOfWork = unitOfWork;
             this._configuration = configuration;
@@ -37,7 +38,17 @@ namespace PropertyManagementAPI.Controllers
             };
             return Ok(loginRes);
         }
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(LoginReqDTO loginReq)
+        {
+            if (await _unitOfWork.UserRepository.UserAlreadyExists(loginReq.UserName))
+                return BadRequest("User already exists, please try something else");
 
+            _unitOfWork.UserRepository.Register(loginReq.UserName, loginReq.Password);
+            await _unitOfWork.SaveAsync();
+            return StatusCode(201);
+
+        }
         private string CreateJWT(User user)
         {
 
